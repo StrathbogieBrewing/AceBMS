@@ -2,29 +2,9 @@
 #include <avr/wdt.h>
 #include <limits.h>
 
-#include "mcp2515.h"
+#include "MCP2515.h"
 #include "AceBus.h"
 #include "msg_solar.h"
-
-
-
-msg_pack_t vbat = BMS_VBAT;
-msg_pack_t ibat = BMS_IBAT;
-msg_pack_t vtrg = BMS_VTRG;
-msg_pack_t itrg = BMS_ITRG;
-
-msg_pack_t cel1 = BMS_CEL1;
-msg_pack_t cel2 = BMS_CEL2;
-msg_pack_t cel3 = BMS_CEL3;
-msg_pack_t cel4 = BMS_CEL4;
-msg_pack_t cel5 = BMS_CEL5;
-msg_pack_t cel6 = BMS_CEL6;
-msg_pack_t cel7 = BMS_CEL7;
-msg_pack_t cel8 = BMS_CEL8;
-msg_pack_t vbal = BMS_VBAL;
-msg_pack_t chah = BMS_CHAH;
-msg_pack_t btc1 = BMS_BTC1;
-msg_pack_t btc2 = BMS_BTC2;
 
 #define kInterruptPin (2)
 AceBus aceBus(Serial, kInterruptPin);
@@ -100,10 +80,10 @@ void process(void) {
 
   tinframe_t txFrame;
   msg_data_t *msg = (msg_data_t *)&txFrame.data[MESSAGE];
-  msg_pack(msg, &vbat, cellSum);  // send battery voltage and current
-  msg_pack(msg, &ibat, (int16_t)(bms.chargeMilliAmps / 10));
-  msg_pack(msg, &vtrg, 26700);
-  msg_pack(msg, &itrg, 2000);
+  msg_pack(msg, BMS_VBAT, cellSum);  // send battery voltage and current
+  msg_pack(msg, BMS_IBAT, (int16_t)(bms.chargeMilliAmps / 10));
+  msg_pack(msg, BMS_VTRG, 26700);
+  msg_pack(msg, BMS_ITRG, 2000);
   writeFrame(&txFrame);
   heartBeat = true;
 }
@@ -137,23 +117,23 @@ void loop() {
       heartBeat = false;
       tinframe_t txFrame;
       msg_data_t *msg = (msg_data_t *)&txFrame.data[MESSAGE];
-      if((frameSequence & SCHEDMSK) == (cel1.msgID & SCHEDMSK)){
-        msg_pack(msg, &cel1, bms.cellVoltage[0]);
-        msg_pack(msg, &cel2, bms.cellVoltage[1]);
-        msg_pack(msg, &cel3, bms.cellVoltage[2]);
-        msg_pack(msg, &cel4, bms.cellVoltage[3]);
+      if((frameSequence & SCHEDMSK) == (MSG_ID(BMS_CEL1) & SCHEDMSK)){
+        msg_pack(msg, BMS_CEL1, bms.cellVoltage[0]);
+        msg_pack(msg, BMS_CEL2, bms.cellVoltage[1]);
+        msg_pack(msg, BMS_CEL3, bms.cellVoltage[2]);
+        msg_pack(msg, BMS_CEL4, bms.cellVoltage[3]);
         writeFrame(&txFrame);
-      } else if((frameSequence & SCHEDMSK) == (cel5.msgID & SCHEDMSK)){
-        msg_pack(msg, &cel5, bms.cellVoltage[4]);
-        msg_pack(msg, &cel6, bms.cellVoltage[5]);
-        msg_pack(msg, &cel7, bms.cellVoltage[6]);
-        msg_pack(msg, &cel8, bms.cellVoltage[7]);
+      } else if((frameSequence & SCHEDMSK) == (MSG_ID(BMS_CEL5) & SCHEDMSK)){
+        msg_pack(msg, BMS_CEL5, bms.cellVoltage[4]);
+        msg_pack(msg, BMS_CEL6, bms.cellVoltage[5]);
+        msg_pack(msg, BMS_CEL7, bms.cellVoltage[6]);
+        msg_pack(msg, BMS_CEL8, bms.cellVoltage[7]);
         writeFrame(&txFrame);
-      } else if((frameSequence & SCHEDMSK) == (vbal.msgID & SCHEDMSK)){
-        msg_pack(msg, &vbal, bms.balanceVoltage);
-        msg_pack(msg, &chah, bms.cellVoltage[1]);
-        msg_pack(msg, &btc1, bms.temperature[0]);
-        msg_pack(msg, &btc2, bms.temperature[1]);
+      } else if((frameSequence & SCHEDMSK) == (MSG_ID(BMS_VBAL) & SCHEDMSK)){
+        msg_pack(msg, BMS_VBAL, bms.balanceVoltage);
+        msg_pack(msg, BMS_CHAH, bms.cellVoltage[1]);
+        msg_pack(msg, BMS_BTC1, bms.temperature[0]);
+        msg_pack(msg, BMS_BTC2, bms.temperature[1]);
         writeFrame(&txFrame);
       }
     }
