@@ -30,11 +30,8 @@ typedef struct {
 
 static bms_t bms;
 
-#define SEQUENCE (0)
-#define MESSAGE (1)
-
 void writeFrame(tinframe_t* frame){
-  frame->data[SEQUENCE] = frameSequence;
+  frame->data[MSG_SEQ_OFFSET] = frameSequence;
   aceBus.write(frame);
 }
 
@@ -79,7 +76,7 @@ void process(void) {
   }
 
   tinframe_t txFrame;
-  msg_data_t *msg = (msg_data_t *)&txFrame.data[MESSAGE];
+  msg_data_t *msg = (msg_data_t *)&txFrame.data[MSG_ID_OFFSET];
   msg_pack(msg, BMS_VBAT, cellSum);  // send battery voltage and current
   msg_pack(msg, BMS_IBAT, (int16_t)(bms.chargeMilliAmps / 10));
   msg_pack(msg, BMS_VTRG, 26700);
@@ -116,7 +113,7 @@ void loop() {
     if(heartBeat){
       heartBeat = false;
       tinframe_t txFrame;
-      msg_data_t *msg = (msg_data_t *)&txFrame.data[MESSAGE];
+      msg_data_t *msg = (msg_data_t *)&txFrame.data[MSG_ID_OFFSET];
       if((frameSequence & SCHEDMSK) == (MSG_ID(BMS_CEL1) & SCHEDMSK)){
         msg_pack(msg, BMS_CEL1, bms.cellVoltage[0]);
         msg_pack(msg, BMS_CEL2, bms.cellVoltage[1]);
@@ -141,7 +138,7 @@ void loop() {
     tinframe_t rxFrame;
     int status = aceBus.read(&rxFrame);
     if(status == AceBus_kOK){
-      frameSequence = rxFrame.data[SEQUENCE] + 1;
+      frameSequence = rxFrame.data[MSG_SEQ_OFFSET] + 1;
     }
   }
 

@@ -3,6 +3,9 @@
 
 #include "msg.h"
 
+#define MSG_SEQ_OFFSET (0)
+#define MSG_ID_OFFSET (1)
+
 // #define LOG_CRCE {0x00, 0, 16, MSG_UNIT}
 // #define LOG_SEQE {0x00, 16, 16, MSG_UNIT}
 // #define LOG_OVRE {0x00, 32, 16, MSG_UNIT}
