@@ -2,3 +2,4 @@ Changes to Hardware
 
 Connect UART RX to external interrupt
 Change UART RX and TX optoisolators to high speed VOH1016AD
+Expose all 6 ADC channels

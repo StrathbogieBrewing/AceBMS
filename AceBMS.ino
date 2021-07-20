@@ -25,6 +25,7 @@ typedef struct {
   int16_t cellVoltage[8];
   int16_t temperature[2];
   int32_t chargeMilliAmps;
+  int32_t chargeMilliAmpSeconds;
   int16_t balanceVoltage;
 } bms_t;
 
@@ -132,7 +133,7 @@ void loop() {
         aceBus.write(&txFrame);
       } else if(frameSequence == MSG_ID(BMS_VBAL)){
         msg_pack(msg, BMS_VBAL, bms.balanceVoltage);
-        msg_pack(msg, BMS_CHAH, bms.cellVoltage[1]);
+        msg_pack(msg, BMS_CHAH, bms.chargeMilliAmpSeconds / 3600);
         msg_pack(msg, BMS_BTC1, bms.temperature[0]);
         msg_pack(msg, BMS_BTC2, bms.temperature[1]);
         aceBus.write(&txFrame);
@@ -155,6 +156,7 @@ void loop() {
                                     (uint32_t)canMsg.data[2]) -
                           8388608L;
         bms.chargeMilliAmps = current;
+        bms.chargeMilliAmpSeconds += current / 4;
 
         process();
 
