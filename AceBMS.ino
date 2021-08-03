@@ -4,7 +4,8 @@
 
 #include "MCP2515.h"
 #include "AceBus.h"
-#include "msg_solar.h"
+
+#include "AceBMS.h"
 
 #define kInterruptPin (2)
 AceBus aceBus(Serial, kInterruptPin);
@@ -77,14 +78,13 @@ void process(void) {
   }
 
   tinframe_t txFrame;
-  msg_data_t *msg = (msg_data_t *)&txFrame.data[MSG_ID_OFFSET];
-  msg_pack(msg, BMS_VBAT, cellSum);  // send battery voltage and current
-  msg_pack(msg, BMS_IBAT, (int16_t)(bms.chargeMilliAmps / 10));
+  msg_t *msg = (msg_t *)txFrame.data;
+  sig_encode(msg, ACEBMS_VBAT, cellSum);  // send battery voltage and current
+  sig_encode(msg, ACEBMS_IBAT, (int16_t)(bms.chargeMilliAmps / 10));
+  sig_encode(msg, ACEBMS_VTRG, 26700);
+  sig_encode(msg, ACEBMS_ITRG, 0);
+  sig_encode(msg, ACEBMS_RQST, ++frameSequence);
 
-  msg_pack(msg, BMS_VTRG, 26700);
-  msg_pack(msg, BMS_ITRG, 2000);
-
-  txFrame.data[MSG_SEQ_OFFSET] = ++frameSequence;
   aceBus.write(&txFrame);
   heartBeat = true;
 }
@@ -116,26 +116,27 @@ void loop() {
     if(heartBeat){
       heartBeat = false;
       tinframe_t txFrame;
-      txFrame.data[MSG_SEQ_OFFSET] = frameSequence;
-      txFrame.data[MSG_ID_OFFSET] = frameSequence;
-      msg_data_t *msg = (msg_data_t *)&txFrame.data[MSG_ID_OFFSET];
-      if(frameSequence == MSG_ID(BMS_CEL1)){
-        msg_pack(msg, BMS_CEL1, bms.cellVoltage[0]);
-        msg_pack(msg, BMS_CEL2, bms.cellVoltage[1]);
-        msg_pack(msg, BMS_CEL3, bms.cellVoltage[2]);
-        msg_pack(msg, BMS_CEL4, bms.cellVoltage[3]);
+
+      // txFrame.data[MSG_ID_OFFSET] = frameSequence;
+      // txFrame.data[MSG_SEQ_OFFSET] = frameSequence;
+      msg_t *msg = (msg_t *)txFrame.data;
+      if(frameSequence == SIG_MSG_ID(ACEBMS_CEL1)){
+        sig_encode(msg, ACEBMS_CEL1, bms.cellVoltage[0]);
+        sig_encode(msg, ACEBMS_CEL2, bms.cellVoltage[1]);
+        sig_encode(msg, ACEBMS_CEL3, bms.cellVoltage[2]);
+        sig_encode(msg, ACEBMS_CEL4, bms.cellVoltage[3]);
         aceBus.write(&txFrame);
-      } else if(frameSequence == MSG_ID(BMS_CEL5)){
-        msg_pack(msg, BMS_CEL5, bms.cellVoltage[4]);
-        msg_pack(msg, BMS_CEL6, bms.cellVoltage[5]);
-        msg_pack(msg, BMS_CEL7, bms.cellVoltage[6]);
-        msg_pack(msg, BMS_CEL8, bms.cellVoltage[7]);
+      } else if(frameSequence == SIG_MSG_ID(ACEBMS_CEL5)){
+        sig_encode(msg, ACEBMS_CEL5, bms.cellVoltage[4]);
+        sig_encode(msg, ACEBMS_CEL6, bms.cellVoltage[5]);
+        sig_encode(msg, ACEBMS_CEL7, bms.cellVoltage[6]);
+        sig_encode(msg, ACEBMS_CEL8, bms.cellVoltage[7]);
         aceBus.write(&txFrame);
-      } else if(frameSequence == MSG_ID(BMS_VBAL)){
-        msg_pack(msg, BMS_VBAL, bms.balanceVoltage);
-        msg_pack(msg, BMS_CHAH, bms.chargeMilliAmpSeconds / 3600);
-        msg_pack(msg, BMS_BTC1, bms.temperature[0]);
-        msg_pack(msg, BMS_BTC2, bms.temperature[1]);
+      } else if(frameSequence == SIG_MSG_ID(ACEBMS_VBAL)){
+        sig_encode(msg, ACEBMS_VBAL, bms.balanceVoltage);
+        sig_encode(msg, ACEBMS_CHAH, bms.chargeMilliAmpSeconds / 3600);
+        sig_encode(msg, ACEBMS_BTC1, bms.temperature[0]);
+        sig_encode(msg, ACEBMS_BTC2, bms.temperature[1]);
         aceBus.write(&txFrame);
       }
     }
