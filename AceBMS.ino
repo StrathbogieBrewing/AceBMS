@@ -4,7 +4,6 @@
 
 #include "MCP2515.h"
 #include "AceBus.h"
-
 #include "AceBMS.h"
 
 #define kInterruptPin (2)
@@ -31,11 +30,6 @@ typedef struct {
 } bms_t;
 
 static bms_t bms;
-
-// void writeFrame(tinframe_t* frame){
-//   frame->data[MSG_SEQ_OFFSET] = frameSequence;
-//   aceBus.write(frame);
-// }
 
 void process(void) {
   // called 4 times per second, triggered by current shunt canbus message
@@ -83,8 +77,10 @@ void process(void) {
   sig_encode(msg, ACEBMS_IBAT, (int16_t)(bms.chargeMilliAmps / 10));
   sig_encode(msg, ACEBMS_VTRG, 26700);
   sig_encode(msg, ACEBMS_ITRG, 0);
-  sig_encode(msg, ACEBMS_RQST, ++frameSequence);
-
+  sig_encode(msg, ACEBMS_RQST, frameSequence);
+  if(++frameSequence >= 240){
+    frameSequence = 0;  // force rollover on minute boundary
+  }
   aceBus.write(&txFrame);
   heartBeat = true;
 }
@@ -116,23 +112,20 @@ void loop() {
     if(heartBeat){
       heartBeat = false;
       tinframe_t txFrame;
-
-      // txFrame.data[MSG_ID_OFFSET] = frameSequence;
-      // txFrame.data[MSG_SEQ_OFFSET] = frameSequence;
       msg_t *msg = (msg_t *)txFrame.data;
-      if(frameSequence == SIG_MSG_ID(ACEBMS_CEL1)){
+      if(frameSequence == (SIG_MSG_ID(ACEBMS_CEL1) & 0xFF)){
         sig_encode(msg, ACEBMS_CEL1, bms.cellVoltage[0]);
         sig_encode(msg, ACEBMS_CEL2, bms.cellVoltage[1]);
         sig_encode(msg, ACEBMS_CEL3, bms.cellVoltage[2]);
         sig_encode(msg, ACEBMS_CEL4, bms.cellVoltage[3]);
         aceBus.write(&txFrame);
-      } else if(frameSequence == SIG_MSG_ID(ACEBMS_CEL5)){
+      } else if(frameSequence == (SIG_MSG_ID(ACEBMS_CEL5) & 0xFF)){
         sig_encode(msg, ACEBMS_CEL5, bms.cellVoltage[4]);
         sig_encode(msg, ACEBMS_CEL6, bms.cellVoltage[5]);
         sig_encode(msg, ACEBMS_CEL7, bms.cellVoltage[6]);
         sig_encode(msg, ACEBMS_CEL8, bms.cellVoltage[7]);
         aceBus.write(&txFrame);
-      } else if(frameSequence == SIG_MSG_ID(ACEBMS_VBAL)){
+      } else if(frameSequence == (SIG_MSG_ID(ACEBMS_VBAL) & 0xFF)){
         sig_encode(msg, ACEBMS_VBAL, bms.balanceVoltage);
         sig_encode(msg, ACEBMS_CHAH, bms.chargeMilliAmpSeconds / 3600);
         sig_encode(msg, ACEBMS_BTC1, bms.temperature[0]);
