@@ -102,8 +102,6 @@ void setup() {
   mcp2515.setNormalMode();
 }
 
-// #define SCHEDMSK (0xFE)
-
 void loop() {
   // update bus
   int status = aceBus.update();
