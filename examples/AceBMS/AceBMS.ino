@@ -7,7 +7,8 @@
 #include "AceBMS.h"
 
 #define kInterruptPin (2)
-AceBus aceBus(Serial, kInterruptPin);
+void aceCallback(tinframe_t *frame){};
+AceBus aceBus(Serial, kInterruptPin, aceCallback);
 
 unsigned char frameSequence = 0;
 bool heartBeat = false;
@@ -131,14 +132,15 @@ void loop() {
         aceBus.write(&txFrame);
       }
     }
-  } else if(status == AceBus_kReadDataReady){
-    tinframe_t rxFrame;
-    // int status =
-    aceBus.read(&rxFrame);  // dummy read to empty rx buffer
-    // if(status == AceBus_kOK){
-    //   frameSequence = rxFrame.data[MSG_SEQ_OFFSET] + 1;
-    // }
   }
+  // else if(status == AceBus_kReadDataReady){
+  //   tinframe_t rxFrame;
+  //   // int status =
+  //   aceBus.read(&rxFrame);  // dummy read to empty rx buffer
+  //   // if(status == AceBus_kOK){
+  //   //   frameSequence = rxFrame.data[MSG_SEQ_OFFSET] + 1;
+  //   // }
+  // }
 
   if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
     if (canMsg.can_id == (CANBUS_CAN_ID_SHUNT | CAN_EFF_FLAG)) {
