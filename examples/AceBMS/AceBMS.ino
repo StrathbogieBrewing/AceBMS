@@ -2,15 +2,15 @@
 #include <avr/wdt.h>
 #include <limits.h>
 
-#include "MCP2515.h"
-#include "AceBus.h"
 #include "AceBMS.h"
+#include "AceBus.h"
+#include "MCP2515.h"
 
 #define kInterruptPin (2)
 void aceCallback(tinframe_t *frame){};
 AceBus aceBus(Serial, kInterruptPin, aceCallback);
 
-unsigned char frameSequence = 0;
+uint16_t frameSequence = 0;
 bool heartBeat = false;
 
 struct can_frame canMsg;
@@ -40,6 +40,9 @@ void process(void) {
   uint16_t cellMax = 0;
   uint16_t cellSum = 0;
 
+  uint16_t cellHi = 0;
+  uint16_t cellLo = 0;
+
   // reset watchdog timer when we get a current measurement
   wdt_reset();
 
@@ -53,17 +56,24 @@ void process(void) {
     cellSum += v;
   }
 
+  uint16_t cellAvg = cellSum / 8;
+
   if (cellMax > 0) {
     bms.balanceVoltage = (cellSum / 8) + 2;
     if (bms.balanceVoltage < 3000) {
       bms.balanceVoltage = 3000;
     }
+    cellHi = cellMax - cellAvg;
   } else {
     bms.balanceVoltage = 0;
   }
 
+  if (cellMin < 5000) {
+    cellLo = cellAvg - cellMin;
+  }
+
   count++;
-  bool buzzer = (count & 0x08) && (bms.chargeMilliAmps < -5000);
+  bool buzzer = (count & 0x08) && (bms.chargeMilliAmps < -10000);
   digitalWrite(buzzerPin, buzzer);
 
   if (count & 0x01) {
@@ -74,13 +84,14 @@ void process(void) {
 
   tinframe_t txFrame;
   msg_t *msg = (msg_t *)txFrame.data;
-  sig_encode(msg, ACEBMS_VBAT, cellSum);  // send battery voltage and current
-  sig_encode(msg, ACEBMS_IBAT, (int16_t)(bms.chargeMilliAmps / 10));
-  sig_encode(msg, ACEBMS_VTRG, 26700);
-  sig_encode(msg, ACEBMS_ITRG, 0);
+  sig_encode(msg, ACEBMS_VBAT,
+             cellSum / 10); // send battery voltage and current
+  sig_encode(msg, ACEBMS_IBAT, (int16_t)(bms.chargeMilliAmps / 100));
+  sig_encode(msg, ACEBMS_VCHI, cellHi / 10);
+  sig_encode(msg, ACEBMS_VCLO, cellLo / 10);
   sig_encode(msg, ACEBMS_RQST, frameSequence);
-  if(++frameSequence >= 240){
-    frameSequence = 0;  // force rollover on minute boundary
+  if (++frameSequence >= (4 * 60 * 60)) {
+    frameSequence = 0; // force rollover on hour boundary
   }
   aceBus.write(&txFrame);
   heartBeat = true;
@@ -106,41 +117,33 @@ void setup() {
 void loop() {
   // update bus
   int status = aceBus.update();
-  if(status == AceBus_kWriteComplete){
+  if (status == AceBus_kWriteComplete) {
     // send other parameters when sequence number matches message ID
-    if(heartBeat){
+    if (heartBeat) {
       heartBeat = false;
       tinframe_t txFrame;
       msg_t *msg = (msg_t *)txFrame.data;
-      if(frameSequence == (SIG_MSG_ID(ACEBMS_CEL1) & 0xFF)){
+      if ((frameSequence & 0xFF) == (SIG_MSG_ID(ACEBMS_CEL1) & 0xFF)) {
         sig_encode(msg, ACEBMS_CEL1, bms.cellVoltage[0]);
         sig_encode(msg, ACEBMS_CEL2, bms.cellVoltage[1]);
         sig_encode(msg, ACEBMS_CEL3, bms.cellVoltage[2]);
         sig_encode(msg, ACEBMS_CEL4, bms.cellVoltage[3]);
         aceBus.write(&txFrame);
-      } else if(frameSequence == (SIG_MSG_ID(ACEBMS_CEL5) & 0xFF)){
+      } else if ((frameSequence & 0xFF) == (SIG_MSG_ID(ACEBMS_CEL5) & 0xFF)) {
         sig_encode(msg, ACEBMS_CEL5, bms.cellVoltage[4]);
         sig_encode(msg, ACEBMS_CEL6, bms.cellVoltage[5]);
         sig_encode(msg, ACEBMS_CEL7, bms.cellVoltage[6]);
         sig_encode(msg, ACEBMS_CEL8, bms.cellVoltage[7]);
         aceBus.write(&txFrame);
-      } else if(frameSequence == (SIG_MSG_ID(ACEBMS_VBAL) & 0xFF)){
+      } else if ((frameSequence & 0xFF) == (SIG_MSG_ID(ACEBMS_VBAL) & 0xFF)) {
         sig_encode(msg, ACEBMS_VBAL, bms.balanceVoltage);
-        sig_encode(msg, ACEBMS_CHAH, bms.chargeMilliAmpSeconds / 3600);
+        sig_encode(msg, ACEBMS_CHAH, bms.chargeMilliAmpSeconds / 360000L);
         sig_encode(msg, ACEBMS_BTC1, bms.temperature[0]);
         sig_encode(msg, ACEBMS_BTC2, bms.temperature[1]);
         aceBus.write(&txFrame);
       }
     }
   }
-  // else if(status == AceBus_kReadDataReady){
-  //   tinframe_t rxFrame;
-  //   // int status =
-  //   aceBus.read(&rxFrame);  // dummy read to empty rx buffer
-  //   // if(status == AceBus_kOK){
-  //   //   frameSequence = rxFrame.data[MSG_SEQ_OFFSET] + 1;
-  //   // }
-  // }
 
   if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
     if (canMsg.can_id == (CANBUS_CAN_ID_SHUNT | CAN_EFF_FLAG)) {
