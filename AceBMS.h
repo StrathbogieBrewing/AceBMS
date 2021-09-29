@@ -44,6 +44,7 @@
                       {"bms/vbal", ACEBMS_VBAL},  \
                       {"bms/chah", ACEBMS_CHAH},  \
                       {"bms/temp/1", ACEBMS_BTC1},  \
-                      {"bms/temp/2", ACEBMS_BTC2}
+                      {"bms/temp/2", ACEBMS_BTC2},  \
+                      {"bms/req", ACEBMS_RQST}
 
 #endif // ACEBMS_H

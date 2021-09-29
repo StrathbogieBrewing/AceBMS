@@ -57,9 +57,8 @@ void process(void) {
   }
 
   uint16_t cellAvg = cellSum / 8;
-
   if (cellMax > 0) {
-    bms.balanceVoltage = (cellSum / 8) + 2;
+    bms.balanceVoltage = cellAvg + 2;
     if (bms.balanceVoltage < 3000) {
       bms.balanceVoltage = 3000;
     }
@@ -73,7 +72,7 @@ void process(void) {
   }
 
   count++;
-  bool buzzer = (count & 0x08) && (bms.chargeMilliAmps < -10000);
+  bool buzzer = (count & 0x08) && (bms.chargeMilliAmps < -10000L);
   digitalWrite(buzzerPin, buzzer);
 
   if (count & 0x01) {
@@ -84,11 +83,10 @@ void process(void) {
 
   tinframe_t txFrame;
   msg_t *msg = (msg_t *)txFrame.data;
-  sig_encode(msg, ACEBMS_VBAT,
-             cellSum / 10); // send battery voltage and current
-  sig_encode(msg, ACEBMS_IBAT, (int16_t)(bms.chargeMilliAmps / 100));
-  sig_encode(msg, ACEBMS_VCHI, cellHi / 10);
-  sig_encode(msg, ACEBMS_VCLO, cellLo / 10);
+  sig_encode(msg, ACEBMS_VBAT, (((uint32_t)cellSum + 5) * 6554L) >> 16L);
+  sig_encode(msg, ACEBMS_IBAT, ((bms.chargeMilliAmps + 50) * 655L) >> 16L);
+  sig_encode(msg, ACEBMS_VCHI, (((uint32_t)cellHi + 5) * 6554L) >> 16L);
+  sig_encode(msg, ACEBMS_VCLO, (((uint32_t)cellLo + 5) * 6554L) >> 16L);
   sig_encode(msg, ACEBMS_RQST, frameSequence);
   if (++frameSequence >= (4 * 60 * 60)) {
     frameSequence = 0; // force rollover on hour boundary
@@ -137,7 +135,7 @@ void loop() {
         aceBus.write(&txFrame);
       } else if ((frameSequence & 0xFF) == (SIG_MSG_ID(ACEBMS_VBAL) & 0xFF)) {
         sig_encode(msg, ACEBMS_VBAL, bms.balanceVoltage);
-        sig_encode(msg, ACEBMS_CHAH, bms.chargeMilliAmpSeconds / 360000L);
+        sig_encode(msg, ACEBMS_CHAH, ((bms.chargeMilliAmpSeconds >> 8L) * 466L) >> 16L);
         sig_encode(msg, ACEBMS_BTC1, bms.temperature[0]);
         sig_encode(msg, ACEBMS_BTC2, bms.temperature[1]);
         aceBus.write(&txFrame);
