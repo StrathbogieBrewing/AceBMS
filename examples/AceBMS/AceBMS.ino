@@ -81,16 +81,17 @@ void process(void) {
     digitalWrite(ledPin, LOW);
   }
 
-  tinframe_t txFrame;
-  msg_t *msg = (msg_t *)txFrame.data;
-  sig_encode(msg, ACEBMS_VBAT, (((uint32_t)cellSum + 5) * 6554L) >> 16L);
-  sig_encode(msg, ACEBMS_IBAT, ((bms.chargeMilliAmps + 50) * 655L) >> 16L);
-  sig_encode(msg, ACEBMS_VCHI, (((uint32_t)cellHi + 5) * 6554L) >> 16L);
-  sig_encode(msg, ACEBMS_VCLO, (((uint32_t)cellLo + 5) * 6554L) >> 16L);
-  sig_encode(msg, ACEBMS_RQST, frameSequence);
   if (++frameSequence >= (4 * 60 * 60)) {
     frameSequence = 0; // force rollover on hour boundary
   }
+
+  tinframe_t txFrame;
+  msg_t *msg = (msg_t *)txFrame.data;
+  sig_encode(msg, ACEBMS_VBAT, SIG_DIVU16BY10(cellSum + 5));
+  sig_encode(msg, ACEBMS_IBAT, SIG_DIVS16BY100(bms.chargeMilliAmps + 50));
+  sig_encode(msg, ACEBMS_VCHI, SIG_DIVU16BY10(cellHi + 5));
+  sig_encode(msg, ACEBMS_VCLO, SIG_DIVU16BY10(cellLo + 5));
+  sig_encode(msg, ACEBMS_RQST, frameSequence);
   aceBus.write(&txFrame);
   heartBeat = true;
 }

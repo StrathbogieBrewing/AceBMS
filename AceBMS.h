@@ -25,7 +25,7 @@
 #define ACEBMS_CEL8 (ACEBMS_VBANK2 | SIG_WORD | SIG_OFF6 | SIG_MILL)
 
 #define ACEBMS_VBAL (ACEBMS_TEMPER | SIG_WORD | SIG_OFF0 | SIG_MILL)
-#define ACEBMS_CHAH (ACEBMS_TEMPER | SIG_WORD | SIG_OFF2 | SIG_DECI)
+#define ACEBMS_CHAH (ACEBMS_TEMPER | SIG_WORD | SIG_OFF2 | SIG_CENT)
 #define ACEBMS_BTC1 (ACEBMS_TEMPER | SIG_BYTE | SIG_OFF4 | SIG_UNIT)
 #define ACEBMS_BTC2 (ACEBMS_TEMPER | SIG_BYTE | SIG_OFF5 | SIG_UNIT)
 
@@ -44,7 +44,7 @@
                       {"bms/vbal", ACEBMS_VBAL},  \
                       {"bms/chah", ACEBMS_CHAH},  \
                       {"bms/temp/1", ACEBMS_BTC1},  \
-                      {"bms/temp/2", ACEBMS_BTC2},  \
+                      {"bms/temp/2", ACEBMS_BTC2}, \
                       {"bms/req", ACEBMS_RQST}
 
 #endif // ACEBMS_H
