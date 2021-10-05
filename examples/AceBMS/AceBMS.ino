@@ -3,14 +3,14 @@
 #include <limits.h>
 
 #include "AceBMS.h"
-#include "AceBus.h"
 #include "MCP2515.h"
+#include "TinBus.h"
 
 #define kInterruptPin (2)
-void aceCallback(tinframe_t *frame){};
-AceBus aceBus(Serial, kInterruptPin, aceCallback);
+void tinCallback(unsigned char *data, unsigned char length){};
+TinBus tinBus(Serial, ACEBMS_BAUD, kInterruptPin, tinCallback);
 
-uint16_t frameSequence = 0;
+uint8_t frameSequence = 0;
 bool heartBeat = false;
 
 struct can_frame canMsg;
@@ -81,18 +81,15 @@ void process(void) {
     digitalWrite(ledPin, LOW);
   }
 
-  if (++frameSequence >= (4 * 60 * 60)) {
-    frameSequence = 0; // force rollover on hour boundary
+  if (++frameSequence >= (4 * 60)) {
+    frameSequence = 0; // force rollover on minute boundary
   }
 
-  tinframe_t txFrame;
-  msg_t *msg = (msg_t *)txFrame.data;
-  sig_encode(msg, ACEBMS_VBAT, SIG_DIVU16BY10(cellSum + 5));
-  sig_encode(msg, ACEBMS_IBAT, SIG_DIVS16BY100(bms.chargeMilliAmps + 50));
-  sig_encode(msg, ACEBMS_VCHI, SIG_DIVU16BY10(cellHi + 5));
-  sig_encode(msg, ACEBMS_VCLO, SIG_DIVU16BY10(cellLo + 5));
-  sig_encode(msg, ACEBMS_RQST, frameSequence);
-  aceBus.write(&txFrame);
+  msg_t msg;
+  sig_encode(&msg, ACEBMS_VBAT, SIG_DIVU16BY10(cellSum + 5));
+  sig_encode(&msg, ACEBMS_IBAT, SIG_DIVS16BY100(bms.chargeMilliAmps + 50));
+  uint8_t size = sig_encode(&msg, ACEBMS_RQST, frameSequence);
+  tinBus.write((unsigned char *)&msg, size, tinframe_kPriorityMedium);
   heartBeat = true;
 }
 
@@ -101,7 +98,7 @@ void setup() {
   wdt_reset();
   wdt_enable(WDTO_1S);
 
-  aceBus.begin();
+  tinBus.begin();
 
   SPI.begin();
 
@@ -115,31 +112,31 @@ void setup() {
 
 void loop() {
   // update bus
-  int status = aceBus.update();
-  if (status == AceBus_kWriteComplete) {
+  int status = tinBus.update();
+  if (status == TinBus_kWriteComplete) {
     // send other parameters when sequence number matches message ID
     if (heartBeat) {
       heartBeat = false;
-      tinframe_t txFrame;
-      msg_t *msg = (msg_t *)txFrame.data;
-      if ((frameSequence & 0xFF) == (SIG_MSG_ID(ACEBMS_CEL1) & 0xFF)) {
-        sig_encode(msg, ACEBMS_CEL1, bms.cellVoltage[0]);
-        sig_encode(msg, ACEBMS_CEL2, bms.cellVoltage[1]);
-        sig_encode(msg, ACEBMS_CEL3, bms.cellVoltage[2]);
-        sig_encode(msg, ACEBMS_CEL4, bms.cellVoltage[3]);
-        aceBus.write(&txFrame);
-      } else if ((frameSequence & 0xFF) == (SIG_MSG_ID(ACEBMS_CEL5) & 0xFF)) {
-        sig_encode(msg, ACEBMS_CEL5, bms.cellVoltage[4]);
-        sig_encode(msg, ACEBMS_CEL6, bms.cellVoltage[5]);
-        sig_encode(msg, ACEBMS_CEL7, bms.cellVoltage[6]);
-        sig_encode(msg, ACEBMS_CEL8, bms.cellVoltage[7]);
-        aceBus.write(&txFrame);
-      } else if ((frameSequence & 0xFF) == (SIG_MSG_ID(ACEBMS_VBAL) & 0xFF)) {
-        sig_encode(msg, ACEBMS_VBAL, bms.balanceVoltage);
-        sig_encode(msg, ACEBMS_CHAH, ((bms.chargeMilliAmpSeconds >> 8L) * 466L) >> 16L);
-        sig_encode(msg, ACEBMS_BTC1, bms.temperature[0]);
-        sig_encode(msg, ACEBMS_BTC2, bms.temperature[1]);
-        aceBus.write(&txFrame);
+      msg_t msg;
+      if (frameSequence == (SIG_MSG_ID(ACEBMS_CEL1) & 0xFF)) {
+        sig_encode(&msg, ACEBMS_CEL1, bms.cellVoltage[0]);
+        sig_encode(&msg, ACEBMS_CEL2, bms.cellVoltage[1]);
+        sig_encode(&msg, ACEBMS_CEL3, bms.cellVoltage[2]);
+        uint8_t size = sig_encode(&msg, ACEBMS_CEL4, bms.cellVoltage[3]);
+        tinBus.write((unsigned char *)&msg, size, tinframe_kPriorityMedium);
+      } else if (frameSequence == (SIG_MSG_ID(ACEBMS_CEL5) & 0xFF)) {
+        sig_encode(&msg, ACEBMS_CEL5, bms.cellVoltage[4]);
+        sig_encode(&msg, ACEBMS_CEL6, bms.cellVoltage[5]);
+        sig_encode(&msg, ACEBMS_CEL7, bms.cellVoltage[6]);
+        uint8_t size = sig_encode(&msg, ACEBMS_CEL8, bms.cellVoltage[7]);
+        tinBus.write((unsigned char *)&msg, size, tinframe_kPriorityMedium);
+      } else if (frameSequence == (SIG_MSG_ID(ACEBMS_VBAL) & 0xFF)) {
+        sig_encode(&msg, ACEBMS_VBAL, bms.balanceVoltage);
+        sig_encode(&msg, ACEBMS_CHAH,
+                   ((bms.chargeMilliAmpSeconds >> 8L) * 466L) >> 16L);
+        sig_encode(&msg, ACEBMS_BTC1, bms.temperature[0]);
+        uint8_t size = sig_encode(&msg, ACEBMS_BTC2, bms.temperature[1]);
+        tinBus.write((unsigned char *)&msg, size, tinframe_kPriorityMedium);
       }
     }
   }
