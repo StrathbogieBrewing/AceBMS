@@ -89,7 +89,7 @@ void process(void) {
   sig_encode(&msg, ACEBMS_VBAT, SIG_DIVU16BY10(cellSum + 5));
   sig_encode(&msg, ACEBMS_IBAT, SIG_DIVS16BY100(bms.chargeMilliAmps + 50));
   uint8_t size = sig_encode(&msg, ACEBMS_RQST, frameSequence);
-  tinBus.write((unsigned char *)&msg, size, tinframe_kPriorityMedium);
+  tinBus.write((unsigned char *)&msg, size, MEDIUM_PRIORITY);
   heartBeat = true;
 }
 
@@ -123,20 +123,20 @@ void loop() {
         sig_encode(&msg, ACEBMS_CEL2, bms.cellVoltage[1]);
         sig_encode(&msg, ACEBMS_CEL3, bms.cellVoltage[2]);
         uint8_t size = sig_encode(&msg, ACEBMS_CEL4, bms.cellVoltage[3]);
-        tinBus.write((unsigned char *)&msg, size, tinframe_kPriorityMedium);
+        tinBus.write((unsigned char *)&msg, size, MEDIUM_PRIORITY);
       } else if (frameSequence == SIG_MSG_ID(ACEBMS_CEL5)) {
         sig_encode(&msg, ACEBMS_CEL5, bms.cellVoltage[4]);
         sig_encode(&msg, ACEBMS_CEL6, bms.cellVoltage[5]);
         sig_encode(&msg, ACEBMS_CEL7, bms.cellVoltage[6]);
         uint8_t size = sig_encode(&msg, ACEBMS_CEL8, bms.cellVoltage[7]);
-        tinBus.write((unsigned char *)&msg, size, tinframe_kPriorityMedium);
+        tinBus.write((unsigned char *)&msg, size, MEDIUM_PRIORITY);
       } else if (frameSequence == SIG_MSG_ID(ACEBMS_VBAL)) {
         sig_encode(&msg, ACEBMS_VBAL, bms.balanceVoltage);
         sig_encode(&msg, ACEBMS_CHAH,
                    ((bms.chargeMilliAmpSeconds >> 8L) * 466L) >> 16L);
         sig_encode(&msg, ACEBMS_BTC1, bms.temperature[0]);
         uint8_t size = sig_encode(&msg, ACEBMS_BTC2, bms.temperature[1]);
-        tinBus.write((unsigned char *)&msg, size, tinframe_kPriorityMedium);
+        tinBus.write((unsigned char *)&msg, size, MEDIUM_PRIORITY);
       }
     }
   }
