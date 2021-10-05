@@ -118,19 +118,19 @@ void loop() {
     if (heartBeat) {
       heartBeat = false;
       msg_t msg;
-      if (frameSequence == (SIG_MSG_ID(ACEBMS_CEL1) & 0xFF)) {
+      if (frameSequence == SIG_MSG_ID(ACEBMS_CEL1)) {
         sig_encode(&msg, ACEBMS_CEL1, bms.cellVoltage[0]);
         sig_encode(&msg, ACEBMS_CEL2, bms.cellVoltage[1]);
         sig_encode(&msg, ACEBMS_CEL3, bms.cellVoltage[2]);
         uint8_t size = sig_encode(&msg, ACEBMS_CEL4, bms.cellVoltage[3]);
         tinBus.write((unsigned char *)&msg, size, tinframe_kPriorityMedium);
-      } else if (frameSequence == (SIG_MSG_ID(ACEBMS_CEL5) & 0xFF)) {
+      } else if (frameSequence == SIG_MSG_ID(ACEBMS_CEL5)) {
         sig_encode(&msg, ACEBMS_CEL5, bms.cellVoltage[4]);
         sig_encode(&msg, ACEBMS_CEL6, bms.cellVoltage[5]);
         sig_encode(&msg, ACEBMS_CEL7, bms.cellVoltage[6]);
         uint8_t size = sig_encode(&msg, ACEBMS_CEL8, bms.cellVoltage[7]);
         tinBus.write((unsigned char *)&msg, size, tinframe_kPriorityMedium);
-      } else if (frameSequence == (SIG_MSG_ID(ACEBMS_VBAL) & 0xFF)) {
+      } else if (frameSequence == SIG_MSG_ID(ACEBMS_VBAL)) {
         sig_encode(&msg, ACEBMS_VBAL, bms.balanceVoltage);
         sig_encode(&msg, ACEBMS_CHAH,
                    ((bms.chargeMilliAmpSeconds >> 8L) * 466L) >> 16L);
