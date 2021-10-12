@@ -5,10 +5,10 @@
 
 #define ACEBMS_BAUD (1200L)
 
-#define ACEBMS_STATUS (0x00 | SIG_SIZE5)
-#define ACEBMS_VBANK1 (0x10 | SIG_SIZE8)
-#define ACEBMS_VBANK2 (0x20 | SIG_SIZE8)
-#define ACEBMS_TEMPER (0x30 | SIG_SIZE8)
+#define ACEBMS_STATUS (0x01 | SIG_SIZE5)
+#define ACEBMS_VBANK1 (0x11 | SIG_SIZE8)
+#define ACEBMS_VBANK2 (0x21 | SIG_SIZE8)
+#define ACEBMS_TEMPER (0x31 | SIG_SIZE8)
 
 #define ACEBMS_VBAT (ACEBMS_STATUS | SIG_WORD | SIG_OFF0 | SIG_CENT)
 #define ACEBMS_IBAT (ACEBMS_STATUS | SIG_WORD | SIG_OFF2 | SIG_DECI)
@@ -30,20 +30,20 @@
 #define ACEBMS_BTC2 (ACEBMS_TEMPER | SIG_BYTE | SIG_OFF5 | SIG_UNIT)
 
 #define ACEBMS_NAMES                 \
-      {"bms/vbat", ACEBMS_VBAT},     \
-      {"bms/ibat", ACEBMS_IBAT},     \
-      {"bms/vcel/1", ACEBMS_CEL1},   \
-      {"bms/vcel/2", ACEBMS_CEL2},   \
-      {"bms/vcel/3", ACEBMS_CEL3},   \
-      {"bms/vcel/4", ACEBMS_CEL4},   \
-      {"bms/vcel/5", ACEBMS_CEL5},   \
-      {"bms/vcel/6", ACEBMS_CEL6},   \
-      {"bms/vcel/7", ACEBMS_CEL7},   \
-      {"bms/vcel/8", ACEBMS_CEL8},   \
-      {"bms/vbal", ACEBMS_VBAL},     \
-      {"bms/chah", ACEBMS_CHAH},     \
-      {"bms/temp/1", ACEBMS_BTC1},   \
-      {"bms/temp/2", ACEBMS_BTC2},   \
-      {"bms/req", ACEBMS_RQST}
+      {"bVb", ACEBMS_VBAT},     \
+      {"bIb", ACEBMS_IBAT},     \
+      {"bVc1", ACEBMS_CEL1},   \
+      {"bVc2", ACEBMS_CEL2},   \
+      {"bVc3", ACEBMS_CEL3},   \
+      {"bVc4", ACEBMS_CEL4},   \
+      {"bVc5", ACEBMS_CEL5},   \
+      {"bVc6", ACEBMS_CEL6},   \
+      {"bVc7", ACEBMS_CEL7},   \
+      {"bVc8", ACEBMS_CEL8},   \
+      {"bVcb", ACEBMS_VBAL},     \
+      {"bAhr", ACEBMS_CHAH},     \
+      {"bTc1", ACEBMS_BTC1},   \
+      {"bTc2", ACEBMS_BTC2},   \
+      {"bReq", ACEBMS_RQST}
 
 #endif // ACEBMS_H
